@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+#Задача 2. Быки и коровы Бубеков Д.В. 521
+
 declare -i step=1
 declare -a history=()
 

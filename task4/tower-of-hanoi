@@ -1,0 +1,202 @@
+#!/usr/bin/bash
+
+# Задача 4. Ханойская башня Бубеков Д.В. 521
+
+declare -a A=(8 7 6 5 4 3 2 1)
+declare -a B=()
+declare -a C=()
+
+declare -i step=1
+
+trap 'echo; echo "Для завершения работы введите q или Q"' SIGINT
+
+
+print_stacks() {
+    local level
+    local a b c
+
+    for ((level = 7; level >= 0; level--)); do
+
+        if ((level < ${#A[@]})); then
+            a=${A[level]}
+        else
+            a=" "
+        fi
+
+        if ((level < ${#B[@]})); then
+            b=${B[level]}
+        else
+            b=" "
+        fi
+
+        if ((level < ${#C[@]})); then
+            c=${C[level]}
+        else
+            c=" "
+        fi
+
+        printf "|%s|  |%s|  |%s|\n" "${a}" "${b}" "${c}"
+    done
+
+    echo "+-+  +-+  +-+"
+    echo " A    B    C"
+}
+
+
+is_win() {
+    local target="8 7 6 5 4 3 2 1"
+
+    if [[ "${B[*]}" == "${target}" || "${C[*]}" == "${target}" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+
+echo
+
+while :; do
+
+    print_stacks
+    echo
+
+    while :; do
+
+        if ! read -r -p "Ход № ${step} (откуда, куда): " input; then
+            echo
+            continue
+        fi
+
+        input=${input//[[:space:]]/}
+
+        case "${input}" in
+        q | Q)
+            echo "Выход."
+            exit 1
+            ;;
+        esac
+
+        input=${input^^}
+
+        if [[ ! "${input}" =~ ^[ABC]{2}$ ]]; then
+            echo "Ошибка: введите два имени стеков A, B или C."
+            continue
+        fi
+
+        from=${input:0:1}
+        to=${input:1:1}
+
+        if [[ "${from}" == "${to}" ]]; then
+            echo "Такое перемещение запрещено!"
+            continue
+        fi
+
+
+        case "${from}" in
+        A)
+            if ((${#A[@]} == 0)); then
+                echo "Такое перемещение запрещено!"
+                continue
+            fi
+
+            from_index=$((${#A[@]} - 1))
+            value=${A[from_index]}
+            ;;
+        B)
+            if ((${#B[@]} == 0)); then
+                echo "Такое перемещение запрещено!"
+                continue
+            fi
+
+            from_index=$((${#B[@]} - 1))
+            value=${B[from_index]}
+            ;;
+        C)
+            if ((${#C[@]} == 0)); then
+                echo "Такое перемещение запрещено!"
+                continue
+            fi
+
+            from_index=$((${#C[@]} - 1))
+            value=${C[from_index]}
+            ;;
+        esac
+
+
+        destination_empty=true
+
+        case "${to}" in
+        A)
+            if ((${#A[@]} > 0)); then
+                to_index=$((${#A[@]} - 1))
+                to_value=${A[to_index]}
+                destination_empty=false
+            fi
+            ;;
+        B)
+            if ((${#B[@]} > 0)); then
+                to_index=$((${#B[@]} - 1))
+                to_value=${B[to_index]}
+                destination_empty=false
+            fi
+            ;;
+        C)
+            if ((${#C[@]} > 0)); then
+                to_index=$((${#C[@]} - 1))
+                to_value=${C[to_index]}
+                destination_empty=false
+            fi
+            ;;
+        esac
+
+
+        if [[ "${destination_empty}" == "false" ]]; then
+            if ((value > to_value)); then
+                echo "Такое перемещение запрещено!"
+                continue
+            fi
+        fi
+
+
+        case "${from}" in
+        A)
+            unset "A[${from_index}]"
+            ;;
+        B)
+            unset "B[${from_index}]"
+            ;;
+        C)
+            unset "C[${from_index}]"
+            ;;
+        esac
+
+
+        case "${to}" in
+        A)
+            A+=("${value}")
+            ;;
+        B)
+            B+=("${value}")
+            ;;
+        C)
+            C+=("${value}")
+            ;;
+        esac
+
+        break
+    done
+
+
+    if is_win; then
+        echo
+        print_stacks
+        echo
+        echo "Вы победили!"
+        exit 0
+    fi
+
+    ((step++))
+    echo
+
+done

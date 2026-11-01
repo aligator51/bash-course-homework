@@ -1,0 +1,185 @@
+#!/usr/bin/bash
+
+# Задача 3. Игра в пятнашки Бубеков Д.В. 521
+
+declare -a board=(
+    1 2 3 4
+    5 6 7 8
+    9 10 11 12
+    13 14 15 0
+)
+
+declare -i step=1
+
+shuffle_board() {
+    local i j temp
+
+    for ((i = ${#board[@]} - 1; i > 0; i--)); do
+        j=$((RANDOM % (i + 1)))
+
+        temp=${board[i]}
+        board[i]=${board[j]}
+        board[j]=$temp
+    done
+}
+
+print_board() {
+    local i
+
+    echo "+-------------------+"
+
+    for ((i = 0; i < 16; i++)); do
+
+        if ((board[i] == 0)); then
+            printf "|    "
+        else
+            printf "| %2d " "${board[i]}"
+        fi
+
+        if (((i + 1) % 4 == 0)); then
+            echo "|"
+
+            if ((i != 15)); then
+                echo "|-------------------|"
+            fi
+        fi
+    done
+
+    echo "+-------------------+"
+}
+
+find_empty() {
+    local i
+
+    for ((i = 0; i < 16; i++)); do
+        if ((board[i] == 0)); then
+            empty=$i
+            return
+        fi
+    done
+}
+
+find_tile() {
+    local number=$1
+    local i
+
+    tile=-1
+
+    for ((i = 0; i < 16; i++)); do
+        if ((board[i] == number)); then
+            tile=$i
+            return
+        fi
+    done
+}
+
+find_neighbors() {
+    neighbors=()
+
+    local row=$((empty / 4))
+    local col=$((empty % 4))
+
+    if ((col > 0)); then
+        neighbors+=($((empty - 1)))
+    fi
+
+    if ((row > 0)); then
+        neighbors+=($((empty - 4)))
+    fi
+
+    if ((col < 3)); then
+        neighbors+=($((empty + 1)))
+    fi
+
+    if ((row < 3)); then
+        neighbors+=($((empty + 4)))
+    fi
+}
+
+is_solved() {
+    local i
+
+    for ((i = 0; i < 15; i++)); do
+        if ((board[i] != i + 1)); then
+            return 1
+        fi
+    done
+
+    if ((board[15] != 0)); then
+        return 1
+    fi
+
+    return 0
+}
+
+shuffle_board
+
+while :; do
+
+    echo "Ход № ${step}"
+    echo
+
+    print_board
+    echo
+
+    find_empty
+    find_neighbors
+
+    read -r -p "Ваш ход (q - выход): " move
+    echo
+
+    if [[ "${move}" == "q" ]]; then
+        exit 0
+    fi
+
+    if [[ ! "${move}" =~ ^([1-9]|1[0-5])$ ]]; then
+        echo "Неверный ввод!"
+        echo "Введите число от 1 до 15 или q."
+        echo
+        continue
+    fi
+
+    find_tile "${move}"
+
+    can_move=false
+
+    for index in "${neighbors[@]}"; do
+        if ((tile == index)); then
+            can_move=true
+            break
+        fi
+    done
+
+    if [[ "${can_move}" == "false" ]]; then
+        echo "Неверный ход!"
+        echo "Невозможно костяшку ${move} передвинуть на пустую ячейку."
+
+        echo -n "Можно выбрать: "
+
+        for ((i = 0; i < ${#neighbors[@]}; i++)); do
+            index=${neighbors[i]}
+
+            if ((i > 0)); then
+                echo -n ", "
+            fi
+
+            echo -n "${board[index]}"
+        done
+
+        echo
+        echo
+        continue
+    fi
+
+    board[empty]=${board[tile]}
+    board[tile]=0
+
+    if is_solved; then
+        echo "Вы собрали головоломку за ${step} ходов."
+        echo
+        print_board
+        exit 0
+    fi
+
+    ((step++))
+done

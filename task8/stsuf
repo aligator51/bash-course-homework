@@ -1,0 +1,41 @@
+#!/usr/bin/bash
+
+# Задача 8. Статистика по суффиксам имен файлов Бубеков Д.В. 521
+
+if (($# != 1)); then
+    echo "Использование: $0 каталог"
+    exit 1
+fi
+
+dir_path=$1
+
+if [[ ! -d "${dir_path}" ]]; then
+    echo "Ошибка: ${dir_path} не является каталогом."
+    exit 1
+fi
+
+declare -A stats=()
+
+while IFS= read -r -d '' file; do
+
+    filename=${file##*/}
+
+    rest=${filename:1}
+
+    if [[ "${rest}" == *.* ]]; then
+        suffix=".${rest##*.}"
+    else
+        suffix="no suffix"
+    fi
+
+    ((stats["${suffix}"]++))
+
+done < <(find "${dir_path}" -type f -print0)
+
+for suffix in "${!stats[@]}"; do
+    printf "%d\t%s\n" "${stats["${suffix}"]}" "${suffix}"
+done |
+    sort -k1,1nr |
+    while IFS=$'\t' read -r count suffix; do
+        printf "%s: %d\n" "${suffix}" "${count}"
+    done

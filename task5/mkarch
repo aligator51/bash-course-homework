@@ -1,0 +1,74 @@
+#!/usr/bin/bash
+
+# Задача 5. Самораспаковывающийся архив Бубеков Д.В. 521
+
+dir_path=""
+name=""
+
+while getopts ":d:n:" option; do
+    case "${option}" in
+    d)
+        dir_path=${OPTARG}
+        ;;
+    n)
+        name=${OPTARG}
+        ;;
+    :)
+        echo "Ошибка: для -${OPTARG} требуется значение."
+        exit 1
+        ;;
+    \?)
+        echo "Ошибка: неизвестная опция -${OPTARG}."
+        exit 1
+        ;;
+    esac
+done
+
+if [[ -z "${dir_path}" || -z "${name}" ]]; then
+    echo "Использование: $0 -d dir_path -n name"
+    exit 1
+fi
+
+if [[ ! -d "${dir_path}" ]]; then
+    echo "Ошибка: каталог ${dir_path} не существует."
+    exit 1
+fi
+
+if [[ "${name}" == */* ]]; then
+    echo "Ошибка: укажите только имя архива без пути."
+    exit 1
+fi
+
+cat >"${name}" <<'SCRIPT'
+#!/usr/bin/bash
+
+unpackdir="."
+
+while getopts ":o:" option; do
+    case "${option}" in
+    o)
+        unpackdir=${OPTARG}
+        ;;
+    :)
+        echo "Ошибка: для -${OPTARG} требуется каталог."
+        exit 1
+        ;;
+    \?)
+        echo "Ошибка: неизвестная опция -${OPTARG}."
+        exit 1
+        ;;
+    esac
+done
+
+mkdir -p "${unpackdir}" || exit 1
+
+base64 -d <<'ARCHIVE' | tar -xzf - -C "${unpackdir}"
+SCRIPT
+
+tar -czf - -C "${dir_path}" . | base64 >>"${name}"
+
+echo "ARCHIVE" >>"${name}"
+
+chmod a+x "${name}"
+
+echo "Создан самораспаковывающийся архив: ${name}"
